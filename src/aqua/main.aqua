@@ -1,0 +1,49 @@
+aqua Main
+
+import "@fluencelabs/aqua-lib/builtin.aqua"
+import "@fluencelabs/registry/subnetwork.aqua"
+import Registry, Record from "@fluencelabs/registry/registry-service.aqua"
+import "@fluencelabs/spell/spell_service.aqua"
+
+import "workers.aqua"
+import "services.aqua"
+
+export greeting, greeting_workers, get_blueprints, get_blueprint, list_modules
+
+
+
+func getServices() -> []Record:
+  servicesInfo <- getWorkersInfo()
+  dealId = servicesInfo.deals.defaultWorker.dealId
+  servicesOp, error <- resolveSubnetwork(dealId)
+  <- servicesOp!
+
+func greeting(arg: string) -> string:
+  on HOST_PEER_ID:
+      services  <- getServices()
+      my_service = services[0]
+      on my_service.metadata.peer_id via my_service.metadata.relay_id:
+        res <- Service.greeting(arg)
+  <- res
+
+func greeting_workers(arg: string) -> string:
+  info <- getWorkersInfo()
+  spell = info.hosts.defaultWorker.installationSpells[0]
+  on spell.workerId via spell.hostId:
+    res <- Service.greeting(arg)
+  <- res
+
+func get_blueprints() -> []Blueprint:
+  on HOST_PEER_ID:
+    bprints <- Dist.list_blueprints()
+  <- bprints
+
+func get_blueprint(bid: string) -> Blueprint:
+  on HOST_PEER_ID:
+    bprint <- Dist.get_blueprint(bid)
+  <- bprint
+
+func list_modules() -> []Module:
+  on HOST_PEER_ID:
+    mods <- Dist.list_modules()
+  <- mods
